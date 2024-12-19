@@ -1,0 +1,189 @@
+Task 1
+IPTables/NFTables - Host Filtering
+
+    You are required to Setup and Test all Rules, prior to implementing any DROP Policy as you may lose connection if improperly configured. Notify Mission Command(Instructor) if connections are dropped.
+
+    IPTable Rule Definitions for T1
+
+    IPTable Rule Definitions for T3
+
+    NFTable Rule Definitions for T2
+
+    Validation of IPTables and NFTables
+
+
+
+
+Tools/Techniques: Wireshark, TCPDump, Open Source Research (OSR)
+
+Prior Approvals: The Gorgan Government has mandated that all protections are required to be tested and validated prior to Droping and/or Blocking any traffic. Seek any clarifying guidance from Mission Command(Instructor), and ensure approval is received prior to moving between the different tasks.
+
+Scheme of Maneuver:
+Task 1
+> Linux Ops Station
+→ INTERNET_HOST
+-→ BLUE_Host-1
+-→ BLUE_Host-3
+-→ BLUE_INT_DMZ_HOST-1
+
+Target Section:
+
+Pivot
+Hostname: INTERNET_HOST
+IP: 10.10.0.40 (Use the provided floating IP only for login from outside of the network
+Creds: PROVIDED CREDENTIALS
+Action: Utilize to Pivot into Gorgan Cyberspace and test filters & Rules
+
+T1
+Hostname: BLUE_Host-1
+IP: 172.16.82.106
+Creds: student : password
+Action: Implement Host Filtering to Allow and Restrict Communications and Traffic
+
+T2
+Hostname: BLUE_Host-3
+IP: 172.16.82.112
+Creds: student : password
+Action: Implement Host Filtering to Allow and Restrict Communications and Traffic
+
+T3
+Hostname: BLUE_INT_DMZ_HOST-1
+IP: 172.16.40.10
+Creds: student : password
+Action: Implement Host Filtering to Allow and Restrict Communications and Traffic
+
+T4
+Hostname: (Will be provided by Mission Command)
+IP: 10.50.XXX.XXX (Will be Provided by Mission Command)
+creds: studentX:passwordX (X = Student Number)
+Known Ports: Unknown
+Action: Interrogate Target and validate Signatures
+
+T5
+Hostname: BLUE_PRIV_HOST-1
+IP: 192.168.1.10
+creds: student : password
+Action: Allow traffic through NAT Capabilities
+
+T6
+Hostname: BLUE_PRIV_HOST-3
+IP: 192.168.3.30
+creds: student : password
+Action: Allow traffic through NAT Capabilities
+
+
+
+
+
+
+sudo iptables -t filter -A INPUT -p icmp --icmp-type echo-request -d 10.10.0.40,172.16.82.106 -j ACCEPT
+
+
+
+Question 1 Notes:
+
+sudo iptables -t filter -A INPUT -p tcp -m multiport --ports 22,23,3389 -m state --state NEW,ESTABLISHED -j ACCEPT
+sudo iptables -t filter -A OUTPUT -p tcp -m multiport --ports 22,23,3389 -m state --state NEW,ESTABLISHED -j ACCEPT
+
+sudo iptables -t filter -P INPUT DROP
+sudo iptables -t filter -P OUTPUT DROP
+sudo iptables -t filter -P FORWARD DROP
+
+sudo iptables -t filter -A INPUT -p icmp --icmp-type echo-request -s 10.10.0.40 -j ACCEPT
+sudo iptables -t filter -A INPUT -p icmp --icmp-type echo-reply -s 10.10.0.40 -j ACCEPT
+sudo iptables -t filter -A OUTPUT -p icmp --icmp-type echo-reply  -d 10.10.0.40 -j ACCEPT
+sudo iptables -t filter -A OUTPUT -p icmp --icmp-type echo-request -d 10.10.0.40 -j ACCEPT
+
+sudo iptables -t filter -A INPUT -p tcp -m multiport --ports 6579,4444 -j ACCEPT
+sudo iptables -t filter -A INPUT -p udp -m multiport --ports 6579,4444 -j ACCEPT
+sudo iptables -t filter -A OUTPUT -p tcp -m multiport --ports 6579,4444 -j ACCEPT
+sudo iptables -t filter -A OUTPUT -p udp -m multiport --ports 6579,4444 -j ACCEPT
+
+sudo iptables -t filter -A INPUT -p tcp -m multiport --ports 80 -m state --state NEW,ESTABLISHED -j ACCEPT
+sudo iptables -t filter -A OUTPUT -p tcp -m multiport --ports 80 -m state --state NEW,ESTABLISHED -j ACCEPT
+
+
+467accfb25050296431008a1357eacb1
+
+Question 2:
+
+sudo nft add table ip CCTC
+sudo nft add chain ip CCTC INPUT { type filter hook input priority 0 \; policy accept \; } 
+sudo nft add chain ip CCTC OUTPUT { type filter hook output priority 0 \; policy accept \; }
+
+sudo nft add rule ip CCTC INPUT ct state { new, established } tcp sport { 22, 23, 3389 } accept
+sudo nft add rule ip CCTC INPUT ct state { new, established } tcp dport { 22, 23, 3389 } accept
+sudo nft add rule ip CCTC OUTPUT ct state { new, established } tcp sport { 22, 23, 3389 } accept
+sudo nft add rule ip CCTC OUTPUT ct state { new, established } tcp dport { 22, 23, 3389 } accept
+
+sudo nft add chain ip CCTC INPUT { \; policy drop \; } 
+sudo nft add chain ip CCTC OUTPUT { \; policy drop \; }
+
+sudo nft add rule ip CCTC INPUT icmp type { echo-request, echo-reply } ip saddr 10.10.0.40 accept
+sudo nft add rule ip CCTC OUTPUT icmp type { echo-request, echo-reply } ip daddr 10.10.0.40 accept
+
+sudo nft add rule ip CCTC INPUT tcp sport { 5050, 5150 } accept
+sudo nft add rule ip CCTC INPUT tcp dport { 5050, 5150 } accept
+sudo nft add rule ip CCTC INPUT udp sport { 5050, 5150 } accept
+sudo nft add rule ip CCTC INPUT udp dport { 5050, 5150 } accept
+sudo nft add rule ip CCTC OUTPUT tcp sport { 5050, 5150 } accept
+sudo nft add rule ip CCTC OUTPUT tcp dport { 5050, 5150 } accept
+sudo nft add rule ip CCTC OUTPUT udp sport { 5050, 5150 } accept
+sudo nft add rule ip CCTC OUTPUT udp dport { 5050, 5150 } accept
+
+sudo nft add rule ip CCTC INPUT tcp sport 80 ct state { new, established } accept
+sudo nft add rule ip CCTC INPUT tcp dport 80 ct state { new, established } accept
+sudo nft add rule ip CCTC OUTPUT tcp sport 80 ct state { new, established } accept
+sudo nft add rule ip CCTC OUTPUT tcp dport 80 ct state { new, established } accept
+
+sudo nft list chain ip CCTC INPUT
+
+9f7a33941828bdafd2755fd20176cdf4
+
+
+Question 3: 
+
+
+sudo iptables -t filter -A INPUT -p tcp -m multiport --ports 22,23,3389 -m state --state NEW,ESTABLISHED -j ACCEPT
+sudo iptables -t filter -A OUTPUT -p tcp -m multiport --ports 22,23,3389 -m state --state NEW,ESTABLISHED -j ACCEPT
+
+sudo iptables -t filter -P INPUT DROP
+sudo iptables -t filter -P OUTPUT DROP
+sudo iptables -t filter -P FORWARD DROP
+
+sudo iptables -t filter -A INPUT -p tcp -m multiport --ports 80 -m state --state NEW,ESTABLISHED -j ACCEPT
+sudo iptables -t filter -A OUTPUT -p tcp -m multiport --ports 80 -m state --state NEW,ESTABLISHED -j ACCEPT
+
+
+05e5fb96e2a117e01fc1227f1c4d664c
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
